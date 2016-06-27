@@ -1,5 +1,4 @@
 # coding: utf-8
-
 """
 Created on Tue June 26 14:43:38 2016
 
@@ -70,7 +69,8 @@ seaborn.lmplot(x='CENTERED_LATITUDE',y='DIAMETER',col='MORPHOLOGY_EJECTA_1',hue=
 
 #First, let's add in the morphology, longitude, rim depth, and number of layers in our model and see whether
 #there are any potential confounding variables
-model1 = smf.ols(formula = 'DIAMETER ~ CENTERED_LATITUDE + CENTERED_LONGITUDE + DEPTH                  + NUMBER_LAYERS + C(MORPHOLOGY_EJECTA_1)',data=data2).fit()
+model1 = smf.ols(formula = 'DIAMETER ~ CENTERED_LATITUDE + CENTERED_LONGITUDE + DEPTH \
+                 + NUMBER_LAYERS + C(MORPHOLOGY_EJECTA_1)',data=data2).fit()
 print(model1.summary())
 
 #We notice in this model, that from the p values (<0.05) of the coefficients, that longitude, morphology, and crater 
@@ -124,21 +124,24 @@ data3 = pandas.DataFrame({'LATITUDE':latitude,
                           'DEPTH':depth,
                           'NUMBER_LAYERS':layers})
 
-model6 = smf.ols(formula = 'DIAMETER ~ CENTERED_LATITUDE + CENTERED_LONGITUDE ',data=data3).fit()
+model6 = smf.ols(formula = 'DIAMETER ~ CENTERED_LATITUDE + CENTERED_LONGITUDE + DEPTH + NUMBER_LAYERS',data=data3).fit()
 print(model6.summary())
-model7 = smf.ols(formula = 'DIAMETER ~ CENTERED_LATITUDE + I(CENTERED_LATITUDE**2) + CENTERED_LONGITUDE',data=data3).fit()
+model7 = smf.ols(formula = 'DIAMETER ~ CENTERED_LATITUDE + I(CENTERED_LATITUDE**2) \
+                           + CENTERED_LONGITUDE + DEPTH + NUMBER_LAYERS',data=data3).fit()
 print(model7.summary())
-
 #We notice that a warning from Python telling us that we have a large condition number when we try to include a polynomial
-#term to our model and also that introducing this term results in no better R-squared value. Therefore we will stick to model6
-#for our analysis
+#term to our model and also that introducing this term results in a better R^2 value. Longitude is no longer statistically significant
+#so we will omit this from our model
+
+model8 = smf.ols(formula = 'DIAMETER ~ CENTERED_LATITUDE + I(CENTERED_LATITUDE**2) \
+                             + DEPTH + NUMBER_LAYERS',data=data3).fit()
+print(model8.summary())
 
 #QQ plot for normality
-fig1 = sm.qqplot(model6.resid,line='r')
-
+fig1 = sm.qqplot(model8.resid,line='r')
 
 #Plot of the residuals
-stdres = pandas.DataFrame(model6.resid_pearson)
+stdres = pandas.DataFrame(model8.resid_pearson)
 plt.plot(stdres, 'o',ls='None')
 l = plt.axhline(y=0, color='r')
 plt.xlabel('Observation Number')
@@ -146,10 +149,10 @@ plt.ylabel('Standardized Residual')
 
 #Additional diagnostics of our regression
 fig2 = plt.figure(figsize=[12,8])
-fig2 = sm.graphics.plot_regress_exog(model6, "CENTERED_LATITUDE", fig = fig2)
+fig2 = sm.graphics.plot_regress_exog(model8, "CENTERED_LATITUDE", fig = fig2)
 
 #Our leverage plot
 fig3, ax = plt.subplots(figsize=[6,4])
-fig3 = sm.graphics.influence_plot(model6,size=8,ax=ax,plot_alpha=1)
+fig3 = sm.graphics.influence_plot(model8,size=8,ax=ax,plot_alpha=1)
 ax=fig3.axes[0]
-ax.set_xlim(0.0,0.0004)
+ax.set_xlim(0.0,0.0035)
